@@ -1,71 +1,84 @@
 document.getElementById('compareBtn').addEventListener('click', compareExcels);
+document.getElementById('addMoreBtn').addEventListener('click', addMoreFile);
+document.getElementById('exportBtn').addEventListener('click', exportResults);
+
+let fileIndex = 2; // Keeps track of how many files are added
+let resultsData = [];
 
 function compareExcels() {
-    const file1 = document.getElementById('file1').files[0];
-    const file2 = document.getElementById('file2').files[0];
+    const fileInputSections = document.querySelectorAll('.file-input-section');
+    const filesData = [];
 
-    const skuColumn1 = document.getElementById('skuColumn1').value.toUpperCase();
-    const priceColumn1 = document.getElementById('priceColumn1').value.toUpperCase();
-    const skuColumn2 = document.getElementById('skuColumn2').value.toUpperCase();
-    const priceColumn2 = document.getElementById('priceColumn2').value.toUpperCase();
+    fileInputSections.forEach((section, index) => {
+        const fileInput = section.querySelector('input[type="file"]');
+        const skuColumn = section.querySelector('.sku-column').value.toUpperCase();
+        const priceColumn = section.querySelector('.price-column').value.toUpperCase();
 
-    if (!file1 || !file2) {
-        alert('Please upload both Excel files.');
+        if (!fileInput.files.length) return; // Ignore empty file sections
+
+        if (!skuColumn || !priceColumn) {
+            alert(`Please specify SKU and Price columns for Excel file ${index + 1}.`);
+            return;
+        }
+
+        const file = fileInput.files[0];
+        filesData.push({ file, skuColumn, priceColumn });
+    });
+
+    if (filesData.length < 2) {
+        alert('Please upload at least two Excel files.');
         return;
     }
 
-    if (!skuColumn1 || !priceColumn1 || !skuColumn2 || !priceColumn2) {
-        alert('Please specify columns to compare.');
-        return;
-    }
+    const filePromises = filesData.map(fileData => parseExcel(fileData.file));
 
-    // Parse both Excel files
-    parseExcel(file1, (data1) => {
-        parseExcel(file2, (data2) => {
-            compareData(data1, data2, skuColumn1, priceColumn1, skuColumn2, priceColumn2);
-        });
+    Promise.all(filePromises).then(dataArr => {
+        compareData(dataArr, filesData);
     });
 }
 
-function parseExcel(file, callback) {
-    const reader = new FileReader();
-
-    reader.onload = function (e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]]; // Assume the first sheet
-        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-        callback(json);
-    };
-
-    reader.readAsArrayBuffer(file);
+function parseExcel(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            resolve(json);
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+    });
 }
 
-function compareData(data1, data2, skuCol1, priceCol1, skuCol2, priceCol2) {
-    const skuIndex1 = columnToIndex(skuCol1);
-    const priceIndex1 = columnToIndex(priceCol1);
-    const skuIndex2 = columnToIndex(skuCol2);
-    const priceIndex2 = columnToIndex(priceCol2);
+function compareData(dataArr, filesData) {
+    const resultsTableBody = document.querySelector('#resultsTable tbody');
+    resultsTableBody.innerHTML = ''; // Clear previous results
 
-    const resultsTable = document.getElementById('resultsTable');
-    resultsTable.innerHTML = ''; // Clear previous results
+    resultsData = []; // Clear previous data
 
-    data1.forEach((row1) => {
+    const firstFileData = dataArr[0];
+    const secondFileData = dataArr[1];
+
+    const skuIndex1 = columnToIndex(filesData[0].skuColumn);
+    const priceIndex1 = columnToIndex(filesData[0].priceColumn);
+    const skuIndex2 = columnToIndex(filesData[1].skuColumn);
+    const priceIndex2 = columnToIndex(filesData[1].priceColumn);
+
+    firstFileData.forEach((row1) => {
         const sku1 = row1[skuIndex1];
         const price1 = parseFloat(row1[priceIndex1]);
 
-        // Find matching SKU in Excel 2
-        const matchingRow2 = data2.find((row2) => row2[skuIndex2] === sku1);
+        const matchingRow2 = secondFileData.find(row2 => row2[skuIndex2] === sku1);
 
-        // Only process if there is a matching SKU and valid price data
         if (matchingRow2) {
             const price2 = parseFloat(matchingRow2[priceIndex2]);
-
-            // Check if both prices are valid numbers
             if (!isNaN(price1) && !isNaN(price2)) {
                 const difference = price1 - price2;
+                const row = [sku1, price1, price2, difference.toFixed(2)];
 
-                // Display the row with SKU and price data
+                resultsData.push(row); // Store data for export
                 const rowHTML = `
                     <tr>
                         <td>${sku1}</td>
@@ -74,7 +87,7 @@ function compareData(data1, data2, skuCol1, priceCol1, skuCol2, priceCol2) {
                         <td>${difference.toFixed(2)}</td>
                     </tr>
                 `;
-                resultsTable.insertAdjacentHTML('beforeend', rowHTML);
+                resultsTableBody.insertAdjacentHTML('beforeend', rowHTML);
             }
         }
     });
@@ -82,4 +95,55 @@ function compareData(data1, data2, skuCol1, priceCol1, skuCol2, priceCol2) {
 
 function columnToIndex(column) {
     return column.charCodeAt(0) - 65; // Convert 'A' to 0, 'B' to 1, etc.
+}
+
+// Sorting functionality
+function sortTable(columnIndex) {
+    const table = document.getElementById('resultsTable');
+    const rowsArray = Array.from(table.rows).slice(1); // Get table rows excluding header
+    const isAscending = table.getAttribute('data-sort-asc') === 'true';
+
+    rowsArray.sort((a, b) => {
+        const aValue = parseFloat(a.cells[columnIndex].innerText);
+        const bValue = parseFloat(b.cells[columnIndex].innerText);
+        return isAscending ? aValue - bValue : bValue - aValue;
+    });
+
+    // Toggle sort order
+    table.setAttribute('data-sort-asc', !isAscending);
+
+    rowsArray.forEach(row => table.tBodies[0].appendChild(row)); // Reorder rows
+}
+
+// Export results to Excel
+function exportResults() {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([['SKU', 'Price (File 1)', 'Price (File 2)', 'Difference'], ...resultsData]);
+    XLSX.utils.book_append_sheet(wb, ws, 'Comparison Results');
+    XLSX.writeFile(wb, 'comparison_results.xlsx');
+}
+
+// Add more file upload sections
+function addMoreFile() {
+    fileIndex++;
+    const uploadSection = document.getElementById('upload-section');
+    const newFileSection = document.createElement('div');
+    newFileSection.classList.add('file-input-section');
+
+    newFileSection.innerHTML = `
+        <label for="file${fileIndex}">Excel ${fileIndex}:</label>
+        <input type="file" id="file${fileIndex}" accept=".xlsx, .xls">
+        <label>SKU Column:</label>
+        <input type="text" class="sku-column" placeholder="e.g., A">
+        <label>Price Column:</label>
+        <input type="text" class="price-column" placeholder="e.g., E">
+        <button class="delete-file-btn">Delete File</button>
+    `;
+    uploadSection.appendChild(newFileSection);
+
+    // Add event listener for deleting file
+    newFileSection.querySelector('.delete-file-btn').addEventListener('click', function() {
+        newFileSection.remove();
+        compareExcels(); // Recalculate the comparison after file deletion
+    });
 }
