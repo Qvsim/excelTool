@@ -9,47 +9,47 @@
 <body>
     <div class="container">
         <h1>Excel Sheet Comparison Tool</h1>
-        <div class="upload-section">
-            <h2>Upload Excel Sheets</h2>
-            <div>
-                <label for="file1">Excel 1:</label>
-                <input type="file" id="file1" accept=".xlsx, .xls">
+        <div id="upload-section">
+            <div class="file-input-section">
+                <h2>Upload Excel Sheets</h2>
+                <div>
+                    <label for="file1">Excel 1:</label>
+                    <input type="file" id="file1" accept=".xlsx, .xls">
+                    <label>SKU Column:</label>
+                    <input type="text" class="sku-column" placeholder="e.g., A">
+                    <label>Price Column:</label>
+                    <input type="text" class="price-column" placeholder="e.g., E">
+                    <button class="delete-file-btn" style="display:none;">Delete File</button>
+                </div>
             </div>
-            <div>
+
+            <div class="file-input-section">
                 <label for="file2">Excel 2:</label>
                 <input type="file" id="file2" accept=".xlsx, .xls">
+                <label>SKU Column:</label>
+                <input type="text" class="sku-column" placeholder="e.g., A">
+                <label>Price Column:</label>
+                <input type="text" class="price-column" placeholder="e.g., E">
+                <button class="delete-file-btn" style="display:none;">Delete File</button>
             </div>
         </div>
-        
-        <div class="column-section">
-            <h2>Select Columns for Comparison</h2>
-            <label for="skuColumn1">SKU Column (Excel 1):</label>
-            <input type="text" id="skuColumn1" placeholder="e.g., B">
 
-            <label for="priceColumn1">Price Column (Excel 1):</label>
-            <input type="text" id="priceColumn1" placeholder="e.g., E">
-
-            <label for="skuColumn2">SKU Column (Excel 2):</label>
-            <input type="text" id="skuColumn2" placeholder="e.g., B">
-
-            <label for="priceColumn2">Price Column (Excel 2):</label>
-            <input type="text" id="priceColumn2" placeholder="e.g., E">
-        </div>
-
+        <button id="addMoreBtn">Add More Files</button>
         <button id="compareBtn">Compare</button>
+        <button id="exportBtn">Export Results as Excel</button>
 
         <div id="results">
             <h2>Comparison Results</h2>
-            <table>
+            <table id="resultsTable">
                 <thead>
                     <tr>
-                        <th>SKU</th>
-                        <th>Price (Excel 1)</th>
-                        <th>Price (Excel 2)</th>
-                        <th>Difference</th>
+                        <th onclick="sortTable(0)">SKU</th>
+                        <th onclick="sortTable(1)">Price (File 1)</th>
+                        <th onclick="sortTable(2)">Price (File 2)</th>
+                        <th onclick="sortTable(3)">Difference</th>
                     </tr>
                 </thead>
-                <tbody id="resultsTable">
+                <tbody>
                 </tbody>
             </table>
         </div>
