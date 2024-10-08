@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Comparison Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Excel Sheet Comparison Tool</h1>
+        <div class="upload-section">
+            <h2>Upload Excel Sheets</h2>
+            <div>
+                <label for="file1">Excel 1:</label>
+                <input type="file" id="file1" accept=".xlsx, .xls">
+            </div>
+            <div>
+                <label for="file2">Excel 2:</label>
+                <input type="file" id="file2" accept=".xlsx, .xls">
+            </div>
+        </div>
+        
+        <div class="column-section">
+            <h2>Select Columns for Comparison</h2>
+            <label for="skuColumn1">SKU Column (Excel 1):</label>
+            <input type="text" id="skuColumn1" placeholder="e.g., B">
+
+            <label for="priceColumn1">Price Column (Excel 1):</label>
+            <input type="text" id="priceColumn1" placeholder="e.g., E">
+
+            <label for="skuColumn2">SKU Column (Excel 2):</label>
+            <input type="text" id="skuColumn2" placeholder="e.g., B">
+
+            <label for="priceColumn2">Price Column (Excel 2):</label>
+            <input type="text" id="priceColumn2" placeholder="e.g., E">
+        </div>
+
+        <button id="compareBtn">Compare</button>
+
+        <div id="results">
+            <h2>Comparison Results</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Price (Excel 1)</th>
+                        <th>Price (Excel 2)</th>
+                        <th>Difference</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsTable">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
